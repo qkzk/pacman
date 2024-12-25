@@ -25,7 +25,7 @@ TILE = 40
 WORLD_WIDTH = WIDTH // TILE
 WORLD_HEIGHT = HEIGHT // TILE
 
-DEBUG = True
+DEBUG = False
 
 
 class Colors:
@@ -41,6 +41,7 @@ class Colors:
     )
     WHITE = "#FFFFFF"
     BLACK = "#000000"
+    HIT = "#CCCCCC"
 
 
 class Movable:
@@ -74,8 +75,12 @@ class Phantom(Movable):
         self.color = color
         self.rect = Rect(x, y, TILE, TILE)
         self.direction = "right"
+        self.hostile = True
+        self.is_hit = False
 
+        clock.unschedule(self.toggle_state)
         clock.schedule_interval(self.choice_direction, 2.0)
+        clock.schedule_interval(self.toggle_state, 8.0)
 
     def choice_direction(self):
         self.direction = choice(("up", "left", "down", "right"))
@@ -83,11 +88,18 @@ class Phantom(Movable):
     def draw(self):
         if DEBUG:
             screen.draw.filled_rect(self.rect, "VIOLET")
+
+        if not self.hostile and not self.is_hit:
+            color = Colors.BLACK
+        elif not self.hostile and self.is_hit:
+            color = Colors.HIT
+        else:
+            color = self.color
         screen.draw.filled_circle(
-            (self.rect.x + TILE // 2, self.rect.y + TILE // 2 - 10), 8, self.color
+            (self.rect.x + TILE // 2, self.rect.y + TILE // 2 - 10), 8, color
         )
         screen.draw.filled_circle(
-            (self.rect.x + TILE // 2, self.rect.y + TILE // 2 + 6), 14, self.color
+            (self.rect.x + TILE // 2, self.rect.y + TILE // 2 + 6), 14, color
         )
         screen.draw.filled_circle(
             (self.rect.x + TILE // 2 - 10, self.rect.y + TILE // 2 - 10),
@@ -113,6 +125,10 @@ class Phantom(Movable):
     def tile(self) -> tuple[int, int]:
         return (self.rect.x + TILE // 2) // TILE, (self.rect.y + TILE // 2) // TILE
 
+    def toggle_state(self):
+        self.hostile = not self.hostile
+        self.is_hit = False
+
 
 SPEED = 4
 
@@ -121,6 +137,7 @@ class Pacman(Movable):
     def __init__(self, x: int, y: int):
         self.rect: Rect = Rect((x + 2, y + 2, TILE - 4, TILE - 4))
         self.lives = 3
+        self.score = 0
         self.invicible = False
 
     def draw(self):
@@ -147,6 +164,14 @@ class Pacman(Movable):
             Rect(self.rect.x + TILE // 2 - 6, self.rect.y + TILE // 2 + 6, 12, 3),
             Colors.BLACK,
         )
+        screen.draw.filled_rect(
+            Rect(self.rect.x + TILE // 2 - 9, self.rect.y + TILE // 2 + 3, 3, 3),
+            Colors.BLACK,
+        )
+        screen.draw.filled_rect(
+            Rect(self.rect.x + TILE // 2 + 6, self.rect.y + TILE // 2 + 3, 3, 3),
+            Colors.BLACK,
+        )
 
     def tile(self) -> tuple[int, int]:
         return (self.rect.x + TILE // 2) // TILE, (self.rect.y + TILE // 2) // TILE
@@ -154,16 +179,16 @@ class Pacman(Movable):
     def end_invicibility(self):
         self.invicible = False
 
-    def hit(self, phantoms: list[Phantom]) -> bool:
-        if self.invicible:
-            return False
+    def hit_phantom(self, phantoms: list[Phantom]):
         for phantom in phantoms:
             if self.rect.colliderect(phantom.rect):
-                self.lives -= 1
-                self.invicible = True
-                clock.schedule(self.end_invicibility, 5.0)
-                return True
-        return False
+                if phantom.hostile and not self.invicible:
+                    self.lives -= 1
+                    self.invicible = True
+                    clock.schedule(self.end_invicibility, 5.0)
+                elif not phantom.hostile and not phantom.is_hit:
+                    phantom.is_hit = True
+                    self.score += 10
 
 
 CELLS: dict[str, int] = {
@@ -188,7 +213,6 @@ class Game:
         self.phantoms: list[Phantom]
         self.world: list[list[int]]
         self.walls: list[Rect]
-        self.score: int
         self.goal: int
         self.is_playing = False
         self.is_started = False
@@ -214,7 +238,6 @@ class Game:
         self.goal = sum(
             (sum(1 for cell in row if cell == self.BALL) for row in self.world)
         )
-        self.score = 0
         self.is_playing = True
         self.is_started = True
         self.is_won = False
@@ -232,10 +255,10 @@ class Game:
     def eat(self, tile_x: int, tile_y: int):
         if self.world[tile_y][tile_x] == self.BALL:
             self.world[tile_y][tile_x] = self.VOID
-            self.score += 1
+            self.pacman.score += 1
 
     def game_over(self):
-        if self.score == self.goal:
+        if self.pacman.score >= self.goal:
             self.is_won = True
             self.is_playing = False
         if self.pacman.lives == 0:
@@ -249,7 +272,7 @@ class Game:
         self.game_over()
         if not self.is_playing:
             clock.schedule(self.reset, 2.0)
-        self.pacman.hit(self.phantoms)
+        self.pacman.hit_phantom(self.phantoms)
         for phantom in self.phantoms:
             while not phantom.move(phantom.direction, self.walls):
                 phantom.choice_direction()
@@ -283,7 +306,7 @@ class Game:
         for phantom in self.phantoms:
             phantom.draw()
         self.pacman.draw()
-        screen.draw.text(str(self.score), topleft=(TILE, 5), **text_attr())
+        screen.draw.text(str(self.pacman.score), topleft=(TILE, 5), **text_attr())
         screen.draw.text(str(self.pacman.lives), midtop=(WIDTH // 2, 5), **text_attr())
         if DEBUG:
             screen.draw.text(str(self.goal), topleft=(WIDTH // 2, 5), **text_attr())

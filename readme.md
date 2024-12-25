@@ -4,11 +4,11 @@
 
 - [x] move phantoms
   - [x] normal
-  - [ ] crazy
+  - [x] crazy
   - [x] lives
 - [x] fix pacman movements
 - [ ] sounds
 - [ ] musics:
-  - [ ] play
+  - [x] play
   - [ ] splash
   - [ ] phantom crazy
