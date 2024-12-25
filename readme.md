@@ -2,8 +2,11 @@
 
 ## TODO
 
-- [ ] move phantoms
-- [ ] fix pacman movements
+- [x] move phantoms
+  - [x] normal
+  - [ ] crazy
+  - [x] lives
+- [x] fix pacman movements
 - [ ] sounds
 - [ ] musics:
   - [ ] play
