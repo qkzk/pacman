@@ -5,7 +5,6 @@ import pgzrun
 
 import pgzrun
 from pgzero import music, clock
-from pgzero.actor import Actor
 from pgzero.keyboard import Keyboard
 from pgzero.screen import Screen
 from pygame import Rect
@@ -18,7 +17,7 @@ keyboard: Keyboard
 os.environ["SDL_VIDEO_CENTERED"] = "1"
 
 TITLE = "PACMAN"
-WIDTH = 1600
+WIDTH = 800
 HEIGHT = 800
 TILE = 40
 
@@ -29,16 +28,17 @@ DEBUG = False
 
 
 class Colors:
-    BACKGROUND = "#555555"
+    BACKGROUND = "#333333"
     WALL = "#3333FF"
-    BALL = "#DD22FF"
     PACMAN = "#FFDD22"
+    BALL = PACMAN
     PHANTOMS = (
-        "#4466AA",
         "#AA2288",
-        "#DD4422",
-        "#22DDAA",
+        "#DD6622",
+        "#556699",
+        "#6611BB",
     )
+    INVICIBLE = "#22DDAA"
     WHITE = "#FFFFFF"
     BLACK = "#000000"
     HIT = "#CCCCCC"
@@ -90,7 +90,7 @@ class Phantom(Movable):
             screen.draw.filled_rect(self.rect, "VIOLET")
 
         if not self.hostile and not self.is_hit:
-            color = Colors.BLACK
+            color = Colors.INVICIBLE
         elif not self.hostile and self.is_hit:
             color = Colors.HIT
         else:
@@ -135,7 +135,7 @@ SPEED = 4
 
 class Pacman(Movable):
     def __init__(self, x: int, y: int):
-        self.rect: Rect = Rect((x + 2, y + 2, TILE - 4, TILE - 4))
+        self.rect: Rect = Rect((x + 4, y + 4, TILE - 8, TILE - 8))
         self.lives = 3
         self.score = 0
         self.invicible = False
@@ -146,7 +146,7 @@ class Pacman(Movable):
         screen.draw.filled_circle(
             (self.rect.x + TILE // 2 - 2, self.rect.y + TILE // 2 - 2),
             18,
-            Colors.PACMAN if not self.invicible else Colors.BLACK,
+            Colors.PACMAN if not self.invicible else Colors.INVICIBLE,
         )
         screen.draw.filled_circle(
             (self.rect.x + TILE // 2 + 10, self.rect.y + TILE // 2 - 5), 7, Colors.WHITE
@@ -221,14 +221,16 @@ class Game:
         clock.schedule(self.reset, 2.0)
 
     def reset(self):
-        self.pacman: Pacman = Pacman(TILE * 30, TILE * 18)
-        self.phantoms: list[Phantom] = [
-            Phantom(5 * TILE, 2 * TILE, Colors.PHANTOMS[0]),
-            Phantom(5 * TILE, 4 * TILE, Colors.PHANTOMS[1]),
-            Phantom(5 * TILE, 6 * TILE, Colors.PHANTOMS[2]),
-            Phantom(5 * TILE, 11 * TILE, Colors.PHANTOMS[3]),
-        ]
         self.world = parse_world(WORLD)
+        height = len(self.world)
+        width = len(self.world[0])
+        self.pacman: Pacman = Pacman((width // 2) * TILE, (height // 2) * TILE)
+        self.phantoms: list[Phantom] = [
+            Phantom(TILE, TILE, Colors.PHANTOMS[0]),
+            Phantom(TILE, (height - 2) * TILE, Colors.PHANTOMS[1]),
+            Phantom((width - 2) * TILE, TILE, Colors.PHANTOMS[2]),
+            Phantom((width - 2) * TILE, (height - 2) * TILE, Colors.PHANTOMS[3]),
+        ]
         self.walls = [
             Rect(TILE * i, TILE * j, TILE, TILE)
             for j, row in enumerate(self.world)
@@ -274,7 +276,7 @@ class Game:
             clock.schedule(self.reset, 2.0)
         self.pacman.hit_phantom(self.phantoms)
         for phantom in self.phantoms:
-            while not phantom.move(phantom.direction, self.walls):
+            if not phantom.move(phantom.direction, self.walls):
                 phantom.choice_direction()
 
     def draw_splash(self):
@@ -287,26 +289,31 @@ class Game:
             text = "GAME OVER"
         screen.draw.text(text, center=(WIDTH / 2, HEIGHT / 2), **text_attr())
 
+    def draw_ball(self, x: int, y: int):
+        screen.draw.filled_circle(
+            (x, y),
+            TILE // 8,
+            Colors.BALL,
+        )
+
     def draw(self):
         if not self.is_playing:
             self.draw_splash()
             return
+        for wall in self.walls:
+            screen.draw.filled_rect(wall, Colors.WALL)
         for j, line in enumerate(self.world):
             for i, block in enumerate(line):
-                if block == self.WALL:
-                    screen.draw.filled_rect(
-                        Rect(i * TILE, j * TILE, TILE, TILE), Colors.WALL
-                    )
-                elif block == self.BALL:
-                    screen.draw.filled_circle(
-                        (i * TILE + TILE // 2, j * TILE + TILE // 2),
-                        TILE // 5,
-                        Colors.BALL,
-                    )
+                if block == self.BALL:
+                    self.draw_ball(i * TILE + TILE // 2, j * TILE + TILE // 2)
         for phantom in self.phantoms:
             phantom.draw()
         self.pacman.draw()
+        self.draw_ball(TILE // 2, TILE // 2)
         screen.draw.text(str(self.pacman.score), topleft=(TILE, 5), **text_attr())
+        screen.draw.filled_circle(
+            (WIDTH // 2 - TILE, TILE // 2), 0.4 * TILE, Colors.PACMAN
+        )
         screen.draw.text(str(self.pacman.lives), midtop=(WIDTH // 2, 5), **text_attr())
         if DEBUG:
             screen.draw.text(str(self.goal), topleft=(WIDTH // 2, 5), **text_attr())

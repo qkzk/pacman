@@ -1,5 +1,5 @@
 # fmt: off
-WORLD = """
+WORLD_ = """
 wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
 wb w    b b b b b b b     b b b b b w  w
 w bw         w  wwwwwww  w    b   b w  w
@@ -20,5 +20,30 @@ w bwwwww  wb w  wwwwwww  wb w   wwwww  w
 w bw  b b   b b b b b b b b b     b w  w
 wb w   b  wwwwwwwwwwwwwwwwwww   b   w  w
 wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+"""
+# fmt: on
+
+# fmt: off
+WORLD = """
+wwwwwwwwwwwwwwwwwwww
+wbbbbbbbbwbbbbbbbbbw
+wbbbbbbbbwbbbbbbbbbw
+wbwwbwwbbwbbwwbwwbbw
+wbbbbbbbbbbbbbbbbbbw
+wbwwbwbwwwwwbwbwwbbw
+wbbbbwbbbbwbbbbbbbbw
+wwwwbwwbwbwbwwbwwwww
+wbbbbbbbwbwbbwbbbbbw
+wwwwbwbwwwwwbwbwwwww
+wbbbbbbbwbbbbwbwbbbw
+wbbbbbbbbbbbbbbbbbbw
+wbwwbwwbwwwwwbwwbwww
+wbbbbwbbbbbbbbbbbwww
+wwwbwbwbwwwwwbwbwbww
+wbbbbbbbbbbbbbbbbbbw
+wbwwbwwbbwbbwwbwwbbw
+wbbbbbbbbwbbbbbbbbbw
+wbbbbbbbbwbbbbbbbbbw
+wwwwwwwwwwwwwwwwwwww
 """
 # fmt: on
